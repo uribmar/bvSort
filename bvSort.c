@@ -1,38 +1,37 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <errno.h>
-#include <string.h>
-#include <fcntl.h>
+#include "helpers.h"
 
-void printFile(char* filename) {
-  int fd = open(filename, O_RDONLY),
-      i,
-      bytesRead = -1;
-  while((bytesRead = read(fd, &i, sizeof(int))) == 4) {
-    printf("%d ", i);
-  }
-  printf("End: %d\n", bytesRead);
-}
+//number of files that we have created
+int fileCount = 0;
 
 //makes all of the temp files that are needed for the sort
 void makeFiles(char* filename) {
+  //file decriptor for the file we will read in the data to be sorted from
   int rf = open(filename, O_RDONLY);
-  int count = 0,
-      bytesRead = -1;
 
-  while(bytesRead != 0) {
-    //TODO read in (up to) 250MB of ints from rf
+  int* data = (int*)malloc(MAX_DATA_SIZE);
+  int dataCounter;
 
-    //TODO get filename (just the current count)
+  while(1) {
+    //read in (up to) 250MB of ints from rf
+    dataCounter = read(rf, data, sizeof(int)*MAX_DATA_SIZE);
+    if(dataCounter == 0) {
+      break;
+    }
+    else {
+      fileCount++;
+    }
+
+    //FIXME should probably put these in their own directory at some point in time
+    char outputFilename[8];
+    sprintf(outputFilename, "%d", fileCount);
 
     //TODO open the file
+    wf = open(outputFilename, WF_ONLY);
 
     //TODO write all of those ints and close the file
   }
 
+  free(data);
   close(rf);
 }
 
@@ -41,6 +40,8 @@ int main(int argc, char** argv) {
     printf("Need to include an input and output file");
     return -1;
   }
+
+  makeFiles(argv[1]);
 
   //TODO open input file
   //TODO sort the sumbitch
