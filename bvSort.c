@@ -25,10 +25,15 @@ void makeFiles(char* filename) {
     char outputFilename[8];
     sprintf(outputFilename, "%d", fileCount);
 
-    //TODO open the file
-    wf = open(outputFilename, WF_ONLY);
+    //open the file
+    int wf = open(outputFilename, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
 
-    //TODO write all of those ints and close the file
+    //write all of those ints and close the file
+    for(int i=0; i<dataCounter/4; i++) {
+      write(wf, data+i, sizeof(int));
+    }
+
+    close(wf);
   }
 
   free(data);
@@ -37,7 +42,7 @@ void makeFiles(char* filename) {
 
 int main(int argc, char** argv) {
   if(argc < 3) {
-    printf("Need to include an input and output file");
+    printf("Need to include an input and output file\n");
     return -1;
   }
 
