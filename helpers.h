@@ -31,3 +31,9 @@ void printFile(char* filename) {
   }
   printf("End: %d\n", bytesRead);
 }
+
+int intComparator(const void* l, const void* r) {
+  unsigned int lVal = *(unsigned int*)l;
+  unsigned int rVal = *(unsigned int*)r;
+  return (lVal-rVal);
+}

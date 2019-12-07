@@ -26,6 +26,9 @@ void* makeFiles(void* arg) {
   int rf = open(info.filename, O_RDONLY);
   unsigned int* readData = (unsigned int*)malloc(MAX_DATA_SIZE);
   int dataToRead = MAX_DATA_SIZE;
+
+  printf("Thread %d is active\n", info.tID);
+
   for(int i = info.tID; i < fileCount; i += 2) {
     //get the file name
     char outputFile[8];
@@ -33,7 +36,6 @@ void* makeFiles(void* arg) {
     sprintf(fID, "%d", i);
     strcpy(outputFile, TEMP_FILE_PATH);
     strcat(outputFile, fID);
-    printf("Thread %d is writing file %s\n", info.tID, outputFile);
 
     //seek to the proper location
     lseek(rf, MAX_DATA_SIZE*i, SEEK_SET);
@@ -42,8 +44,24 @@ void* makeFiles(void* arg) {
     if(i == fileCount-1 && inputFileSize % MAX_DATA_SIZE != 0) {
       dataToRead = inputFileSize % MAX_DATA_SIZE;
     }
+
+
+    printf("Thread %d is reading %d bytes from location %u\n",
+           info.tID, dataToRead, MAX_DATA_SIZE*i);
+
     read(rf, readData, dataToRead);
 
+    qsort(readData, dataToRead/sizeof(unsigned int), sizeof( unsigned int), intComparator);
+
+    printf("Thread %d is sorting %d ints\n", info.tID, dataToRead);
+
+    for(int j=1; j<dataToRead/sizeof(unsigned int); j++) {
+      if( !(readData[j-1] <= readData[j]) ) {
+        printf("COCKSUCKING %d BEFORE %d\n", readData[j-1], readData[j]);
+      }
+    }
+
+    printf("Thread %d is writing to file %s\n", info.tID, outputFile);
     //open and write to the temp file
     int wf = open(outputFile, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
     write(wf, readData, dataToRead);
@@ -73,10 +91,13 @@ int main(int argc, char** argv) {
     pthread_create(tID+i, 0, makeFiles, info+i);
   }
 
-  //join threads
+  //join threads that made the files
   for(int i=0; i<NUM_CORES; i++) {
     pthread_join(tID[i], NULL);
   }
+
+  //merge files
+  //merge();
 
   //delete the files then delete the directory
   for(int i=0; i<fileCount; i++) {
