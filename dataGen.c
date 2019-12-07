@@ -23,7 +23,7 @@ int main(int argc, char** argv) {
   }
 
   int num;
-  for(int i=0; i<1000000000; i++) {
+  for(int i=0; i<1024*1024*1024; i++) {
     num = rand() % 1000;
     write(fd, &num, sizeof(int));
   }
