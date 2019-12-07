@@ -72,6 +72,55 @@ void* makeFiles(void* arg) {
   close(rf);
 }
 
+void merge(char* outfile) {
+  printf("Merging...\n");
+  unsigned int currNums[fileCount];
+  int fds[fileCount];
+  char* fileNames[fileCount];
+
+  int wf = open(outfile, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+
+  for(int i=0; i<fileCount; i++) {
+    printf("Creating file descriptors\n");
+    //open file descriptors for each file
+    char* outputFile = (char*)malloc(sizeof(char)*8);
+    fileNames[i] = outputFile;
+    char fID[3];
+    sprintf(fID, "%d", i);
+    strcpy(outputFile, TEMP_FILE_PATH);
+    strcat(outputFile, fID);
+    fds[i] = open(outputFile, O_RDONLY);
+  }
+
+  while(fileCount > 0) {
+    int bestValInd = 0;
+    for(int i=1; i<fileCount; i++) {
+      if(currNums[i] < currNums[bestValInd]) {
+        bestValInd = i;
+      }
+    }
+
+    write(wf, currNums+bestValInd, sizeof(unsigned int));
+
+    int bytesRead = read(fds[bestValInd], currNums+bestValInd, sizeof(unsigned int));
+    if(bytesRead == 0) {
+      printf("Deleting %s\n",fileNames[bestValInd]);
+      close(fds[bestValInd]);
+      unlink(fileNames[bestValInd]);
+      free(fileNames[bestValInd]);
+      for(int i = bestValInd; i<fileCount-1; i++) {
+        fds[i] = fds[i+1];
+        currNums[i] = currNums[i+1];
+        fileNames[i] = fileNames[i+1];
+      }
+      fileCount--;
+    }
+  }
+
+  close(wf);
+
+}
+
 int main(int argc, char** argv) {
   if(argc < 3) {
     printf("Need to include an input and output file\n");
@@ -97,8 +146,9 @@ int main(int argc, char** argv) {
   }
 
   //merge files
-  //merge();
+  merge(argv[2]);
 
+  /*
   //delete the files then delete the directory
   for(int i=0; i<fileCount; i++) {
     char outputFile[8];
@@ -108,10 +158,8 @@ int main(int argc, char** argv) {
     strcat(outputFile, fID);
     unlink(outputFile);
   }
+  */
   rmdir(TEMP_FILE_PATH);
 
-  //TODO open input file
-  //TODO sort the sumbitch
-  //TODO write to output file
   return 0;
 }
