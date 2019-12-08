@@ -23,9 +23,12 @@ int main(int argc, char** argv) {
   }
 
   int num;
-  for(int i=0; i<1024*1024*1024; i++) {
-    num = rand() % 1000;
-    write(fd, &num, sizeof(int));
+ //for(int i=0; i<1024*1024*1024; i++) {
+ //  num = rand() % 1000;
+ //  write(fd, &num, sizeof(int));
+ //}
+  for(int i=1024*1024*100; i>0; i--) {
+    write(fd, &i, sizeof(int));
   }
 
   close(fd);

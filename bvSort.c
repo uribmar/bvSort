@@ -78,6 +78,9 @@ void merge(char* outfile) {
   int fds[fileCount];
   char* fileNames[fileCount];
 
+  unsigned int* outBuffer = (unsigned int*)malloc(sizeof(unsigned int) * 100000000);
+  unsigned int bufferSize = 0;
+
   int wf = open(outfile, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
 
   for(int i=0; i<fileCount; i++) {
@@ -90,6 +93,7 @@ void merge(char* outfile) {
     strcpy(outputFile, TEMP_FILE_PATH);
     strcat(outputFile, fID);
     fds[i] = open(outputFile, O_RDONLY);
+    read(fds[i], currNums+i, sizeof(unsigned int));
   }
 
   while(fileCount > 0) {
@@ -100,7 +104,18 @@ void merge(char* outfile) {
       }
     }
 
-    write(wf, currNums+bestValInd, sizeof(unsigned int));
+    outBuffer[bufferSize] = currNums[bestValInd];
+    bufferSize++;
+    if(bufferSize == 100000000) {
+      printf("Writing...\n");
+      if(write(wf, outBuffer, sizeof(unsigned int) * 100000000) < sizeof(unsigned int) * 100000000) {
+        printf("Well fuck me sideways\n");
+      }
+      else {
+        printf("Good so far\n");
+      }
+      bufferSize = 0;
+    }
 
     int bytesRead = read(fds[bestValInd], currNums+bestValInd, sizeof(unsigned int));
     if(bytesRead == 0) {
@@ -117,6 +132,16 @@ void merge(char* outfile) {
     }
   }
 
+  printf("Writing...\n");
+  //write(wf, outBuffer, sizeof(unsigned int) * bufferSize);
+  if(write(wf, outBuffer, sizeof(unsigned int) * bufferSize) < sizeof(unsigned int) * bufferSize) {
+    printf("Well fuck me sideways\n");
+  }
+  else {
+    printf("Good so far\n");
+  }
+
+  free(outBuffer);
   close(wf);
 
 }
