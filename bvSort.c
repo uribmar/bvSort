@@ -10,9 +10,7 @@ void countFiles(char* filename) {
   int f = open(filename, O_RDONLY);
   inputFileSize = lseek(f, 0L, SEEK_END);
 
-  printf("Size of input file: %ld bytes\n", inputFileSize);
-
-  //int divide it into chunks of 250MB
+  //int divide it into chunks of max data size (250MB)
   fileCount = inputFileSize / MAX_DATA_SIZE;
   if( (inputFileSize%MAX_DATA_SIZE) != 0) {
     fileCount++;
@@ -27,7 +25,6 @@ void* makeFiles(void* arg) {
   unsigned int* readData = (unsigned int*)malloc(MAX_DATA_SIZE);
   int dataToRead = MAX_DATA_SIZE;
 
-  printf("Thread %d is active\n", info.tID);
 
   for(int i = info.tID; i < fileCount; i += 2) {
     //get the file name
@@ -44,24 +41,11 @@ void* makeFiles(void* arg) {
     if(i == fileCount-1 && inputFileSize % MAX_DATA_SIZE != 0) {
       dataToRead = inputFileSize % MAX_DATA_SIZE;
     }
-
-
-    printf("Thread %d is reading %d bytes from location %u\n",
-           info.tID, dataToRead, MAX_DATA_SIZE*i);
-
     read(rf, readData, dataToRead);
 
+    //sort the data
     qsort(readData, dataToRead/sizeof(unsigned int), sizeof( unsigned int), intComparator);
 
-    printf("Thread %d is sorting %d ints\n", info.tID, dataToRead);
-
-    for(int j=1; j<dataToRead/sizeof(unsigned int); j++) {
-      if( !(readData[j-1] <= readData[j]) ) {
-        printf("COCKSUCKING %d BEFORE %d\n", readData[j-1], readData[j]);
-      }
-    }
-
-    printf("Thread %d is writing to file %s\n", info.tID, outputFile);
     //open and write to the temp file
     int wf = open(outputFile, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
     write(wf, readData, dataToRead);
@@ -73,7 +57,6 @@ void* makeFiles(void* arg) {
 }
 
 void merge(char* outfile) {
-  printf("Merging...\n");
   unsigned int currNums[fileCount];
   int fds[fileCount];
   char* fileNames[fileCount];
@@ -84,8 +67,7 @@ void merge(char* outfile) {
   int wf = open(outfile, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
 
   for(int i=0; i<fileCount; i++) {
-    printf("Creating file descriptors\n");
-    //open file descriptors for each file
+    //open file descriptors for each file and read in the first number
     char* outputFile = (char*)malloc(sizeof(char)*8);
     fileNames[i] = outputFile;
     char fID[3];
@@ -97,6 +79,7 @@ void merge(char* outfile) {
   }
 
   while(fileCount > 0) {
+    //look for the lowest number
     int bestValInd = 0;
     for(int i=1; i<fileCount; i++) {
       if(currNums[i] < currNums[bestValInd]) {
@@ -104,22 +87,23 @@ void merge(char* outfile) {
       }
     }
 
+    //add the item to the buffer
+    //if the buffer is full, write it to file and flush it
     outBuffer[bufferSize] = currNums[bestValInd];
     bufferSize++;
     if(bufferSize == 100000000) {
-      printf("Writing...\n");
+      //printf("Writing...\n");
       if(write(wf, outBuffer, sizeof(unsigned int) * 100000000) < sizeof(unsigned int) * 100000000) {
-        printf("Well fuck me sideways\n");
-      }
-      else {
-        printf("Good so far\n");
+        printf("Something is wrong. Not all data was written\n");
       }
       bufferSize = 0;
     }
 
+    //read in a new number to replace the one we put in the buffer
+    //if the file is empty, delete it
     int bytesRead = read(fds[bestValInd], currNums+bestValInd, sizeof(unsigned int));
     if(bytesRead == 0) {
-      printf("Deleting %s\n",fileNames[bestValInd]);
+      //printf("Deleting %s\n",fileNames[bestValInd]);
       close(fds[bestValInd]);
       unlink(fileNames[bestValInd]);
       free(fileNames[bestValInd]);
@@ -132,18 +116,13 @@ void merge(char* outfile) {
     }
   }
 
-  printf("Writing...\n");
-  //write(wf, outBuffer, sizeof(unsigned int) * bufferSize);
+  //printf("Writing...\n");
   if(write(wf, outBuffer, sizeof(unsigned int) * bufferSize) < sizeof(unsigned int) * bufferSize) {
-    printf("Well fuck me sideways\n");
-  }
-  else {
-    printf("Good so far\n");
+    printf("Something is wrong. Not all data was written\n");
   }
 
   free(outBuffer);
   close(wf);
-
 }
 
 int main(int argc, char** argv) {
@@ -173,17 +152,7 @@ int main(int argc, char** argv) {
   //merge files
   merge(argv[2]);
 
-  /*
-  //delete the files then delete the directory
-  for(int i=0; i<fileCount; i++) {
-    char outputFile[8];
-    char fID[3];
-    sprintf(fID, "%d", i);
-    strcpy(outputFile, TEMP_FILE_PATH);
-    strcat(outputFile, fID);
-    unlink(outputFile);
-  }
-  */
+  //delete the empty temp file directory
   rmdir(TEMP_FILE_PATH);
 
   return 0;
