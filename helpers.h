@@ -32,6 +32,7 @@ void printFile(char* filename) {
   printf("End: %d\n", bytesRead);
 }
 
+//used for qsort
 int intComparator(const void* l, const void* r) {
   unsigned int lVal = *(unsigned int*)l;
   unsigned int rVal = *(unsigned int*)r;
