@@ -9,7 +9,7 @@
 
 int main(int argc, char** argv) {
   if(argc < 2) {
-    printf("Marco, you're fucking stupid\n");
+    printf("Specify a file that you would like the generated data to be written to\n");
     return -1;
   }
 
@@ -17,19 +17,23 @@ int main(int argc, char** argv) {
 
   if (fd < 0) {
     if (errno == EEXIST) {
-      printf("dELETE THE FILE YOU FUCKING DONKEY\n");
+      printf("Error: file already exists\n");
       return -1;
     }
   }
 
   int num;
- //for(int i=0; i<1024*1024*1024; i++) {
- //  num = rand() % 1000;
- //  write(fd, &num, sizeof(int));
- //}
+  for(int i=0; i<1024*1024*1024; i++) {
+    num = rand() % 1000;
+    write(fd, &num, sizeof(int));
+  }
+
+
+  /*
   for(int i=1024*1024*100; i>0; i--) {
     write(fd, &i, sizeof(int));
   }
+  */
 
   close(fd);
   return 0;
